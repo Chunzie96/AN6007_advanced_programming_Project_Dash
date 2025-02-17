@@ -15,16 +15,17 @@ import plotly.express as px
 df = pd.read_csv("final.csv")
 
 # Initialize the app
-app = Dash()
+app = Dash(__name__, use_pages=True)
 
 # App layout
-app.layout = [
+app.layout = html.Div([
+    dash.page_container,  # This renders the content of the current page
     html.Div(children='My First App with Data, Graph, and Controls'),
     html.Hr(),
     dcc.RadioItems(options=["year", "month", "region"], value = 'year', id= 'controls-and-radio-item'),
     dash_table.DataTable(data=df.to_dict('records'), page_size=6),
-    dcc.Graph(figure={}, id='controls-and-graph')
-]
+    dcc.Graph(figure={}, id='controls-and-graph'),
+])
 
 # Add controls to build the interaction
 
