@@ -17,20 +17,21 @@ app = Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.CYBORG])
 
 # Navbar
 navbar = dbc.NavbarSimple(
-    brand="Electricity Data Dashboard",
-    brand_href="/",
-    color="primary",
-    dark=True,
     children=[
+        dbc.NavItem(dbc.NavLink("Home", href="/")),
         dbc.NavItem(dbc.NavLink("Regional Map", href="/map")),
         dbc.NavItem(dbc.NavLink("Trend Analysis", href="/trend"))
-    ]
+    ],
+    brand="Electricity Dashboard",
+    brand_href="/",
+    color="light",
+    dark=False
 )
 
 # App layout
 app.layout = html.Div([
-    navbar,  # Add the navbar
-    html.Div(dash.page_container, className="p-4")  # Add padding around the page content
+    navbar, 
+    html.Div(dash.page_container, className="p-4")  
 ])
 
 # Run the app

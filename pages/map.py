@@ -5,12 +5,10 @@ Created on Wed Jan 22 20:07:20 2025
 
 @author: chunhan
 """
-
-from dash import html, dcc, callback, Output, Input
 import dash
+from dash import html, dcc, callback, Output, Input
 import pandas as pd
 import plotly.express as px
-import json  # To load GeoJSON data
 import dash_bootstrap_components as dbc
 from dash.dash_table import DataTable
 
@@ -19,144 +17,130 @@ dash.register_page(__name__, path="/map")  # Register the map page
 # Load the electricity data
 df = pd.read_csv("final.csv")
 
-# Load the updated GeoJSON file
-with open("singapore_regions.geojson", "r") as f:
-    singapore_geojson = json.load(f)
+# Initialize the Dash app
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# Get unique dwelling types for the dropdown
-dwelling_types = df["dwelling_type"].unique()
+# Define Singapore area coordinates
+singapore_coordinates = {
+    'Ang Mo Kio': {'lat': 1.3691, 'lon': 103.8454},
+    'Bedok': {'lat': 1.3236, 'lon': 103.9273},
+    'Bishan': {'lat': 1.3526, 'lon': 103.8352},
+    'Bukit Batok': {'lat': 1.3590, 'lon': 103.7637},
+    'Bukit Merah': {'lat': 1.2819, 'lon': 103.8239},
+    'Bukit Panjang': {'lat': 1.3774, 'lon': 103.7719},
+    'Bukit Timah': {'lat': 1.3294, 'lon': 103.8021},
+    'Central Area': {'lat': 1.2789, 'lon': 103.8536},
+    'Choa Chu Kang': {'lat': 1.3840, 'lon': 103.7470},
+    'Clementi': {'lat': 1.3162, 'lon': 103.7649},
+    'Geylang': {'lat': 1.3201, 'lon': 103.8918},
+    'Hougang': {'lat': 1.3612, 'lon': 103.8863},
+    'Jurong East': {'lat': 1.3329, 'lon': 103.7436},
+    'Jurong West': {'lat': 1.3404, 'lon': 103.7090},
+    'Kallang': {'lat': 1.3100, 'lon': 103.8651},
+    'Marine Parade': {'lat': 1.3020, 'lon': 103.8971},
+    'Pasir Ris': {'lat': 1.3721, 'lon': 103.9474},
+    'Punggol': {'lat': 1.3984, 'lon': 103.9072},
+    'Queenstown': {'lat': 1.2942, 'lon': 103.7861},
+    'Sembawang': {'lat': 1.4491, 'lon': 103.8185},
+    'Sengkang': {'lat': 1.3868, 'lon': 103.8914},
+    'Serangoon': {'lat': 1.3554, 'lon': 103.8679},
+    'Tampines': {'lat': 1.3496, 'lon': 103.9568},
+    'Toa Payoh': {'lat': 1.3343, 'lon': 103.8563},
+    'Woodlands': {'lat': 1.4382, 'lon': 103.7890},
+    'Yishun': {'lat': 1.4304, 'lon': 103.8354}
+}
 
-# Layout
-layout = dbc.Container([
-    dbc.Row([
-        dbc.Col(html.H2("Singapore Electricity Usage by Region", className="text-center text-primary mb-4"), width=12)
-    ]),
-    dbc.Row([
-        dbc.Col(
-            dcc.Dropdown(
-                id="dwelling-type-dropdown",
-                options=[{"label": dt, "value": dt} for dt in dwelling_types],
-                value=dwelling_types[0],  # Default selection
-                placeholder="Select a Dwelling Type",
-                className="mb-4"
-            ),
-            width=6
-        )
-    ]),
-    dbc.Row([
-        dbc.Col(
-            dcc.Graph(id="singapore-map"),  # Placeholder for the map
-            width=12
-        )
-    ]),
-    dbc.Row([
-        dbc.Col(
-            html.H4("Filtered Data Table", className="text-center text-secondary mt-4 mb-2"),
-            width=12
-        )
-    ]),
-    dbc.Row([
-        dbc.Col(
-            DataTable(
-                id="filtered-data-table",
-                columns=[
-                    {"name": "Region", "id": "Region"},
-                    {"name": "Average kWh per Account", "id": "kwh_per_acc"}
-                ],
-                style_table={"overflowX": "auto"},  # Allow horizontal scrolling
-                style_header={
-                    "backgroundColor": "rgb(230, 230, 230)",
-                    "fontWeight": "bold"
-                },
-                style_cell={
-                    "textAlign": "center",
-                    "padding": "10px"
-                },
-                page_size=10  # Display 10 rows per page
-            ),
-            width=12
-        )
-    ]),
-    dbc.Row([
-        dbc.Col(
-            dbc.Button("Go to Home Page", href="/", color="primary", className="me-2"),
-            width="auto"
-        ),
-        dbc.Col(
-            dbc.Button("Go to Data Page", href="/data", color="secondary", className="me-2"),
-            width="auto"
-        ),
-        dbc.Col(
-            dbc.Button("Go to Graph Page", href="/graph", color="info", className="me-2"),
-            width="auto"
-        ),
-        dbc.Col(
-            dbc.Button("Go to Trend Analysis Page", href="/trend", color="success", className="me-2"),
-            width="auto"
-        )
-    ], className="d-flex justify-content-center mt-4")
-], fluid=True)
+# Process the dataframe to add coordinates
+def add_coordinates(df):
+    # Create new columns for latitude and longitude
+    df['latitude'] = df['Area'].map(lambda x: singapore_coordinates.get(x, {}).get('lat'))
+    df['longitude'] = df['Area'].map(lambda x: singapore_coordinates.get(x, {}).get('lon'))
+    return df
 
-# Callback to render the map and update the table based on the selected dwelling type
+# Assuming df is your original dataframe
+# df = pd.read_csv('your_data.csv')
+df = add_coordinates(df)
+
+layout = html.Div([
+    dbc.Container([
+        html.H1("Singapore Electricity Consumption Heatmap",
+                className="text-center my-4"),
+
+        # Dropdown for dwelling type
+        dbc.Row([
+            dbc.Col([
+                html.Label("Select Dwelling Type"),
+                dcc.Dropdown(
+                    id='dwelling-dropdown',
+                    options=[{'label': i, 'value': i}
+                            for i in df['dwelling_type'].unique()],
+                    value=df['dwelling_type'].iloc[0],
+                    className="mb-4"
+                )
+            ], width=6)
+        ], justify="center"),
+
+        # Heatmap
+        dbc.Row([
+            dbc.Col([
+                dcc.Graph(id='singapore-heatmap')
+            ], width=12)
+        ])
+    ])
+])
+
 @callback(
-    [Output("singapore-map", "figure"),
-     Output("filtered-data-table", "data")],
-    Input("dwelling-type-dropdown", "value")
+    Output('singapore-heatmap', 'figure'),
+    [Input('dwelling-dropdown', 'value')]
 )
-def update_map_and_table(selected_dwelling_type):
-    # Filter the data by the selected dwelling type
-    filtered_data = df[df["dwelling_type"] == selected_dwelling_type]
+def update_heatmap(selected_dwelling):
+    # Filter data based on dwelling type
+    filtered_df = df[df['dwelling_type'] == selected_dwelling]
 
-    # Aggregate electricity data by region
-    region_summary = filtered_data.groupby("Region")["kwh_per_acc"].mean().reset_index()
-
-    # Handle empty data
-    if region_summary.empty:
-        return px.choropleth_mapbox(
-            pd.DataFrame({"Region": [], "kwh_per_acc": []}),
-            geojson=singapore_geojson,
-            locations="Region",
-            featureidkey="properties.Region",
-            color="kwh_per_acc",
-            mapbox_style="carto-positron",
-            center={"lat": 1.3521, "lon": 103.8198},
-            zoom=10
-        ), []
-
-    # Create a choropleth map
-    fig = px.choropleth_mapbox(
-        region_summary,
-        geojson=singapore_geojson,
-        locations="Region",  # Column in the data that matches GeoJSON "properties.Region"
-        featureidkey="properties.Region",  # Key in GeoJSON that matches the data
-        color="kwh_per_acc",  # Column to color by
-        color_continuous_scale="Viridis",  # Color scale
+    # Create the heatmap
+    fig = px.density_mapbox(
+        filtered_df,
+        lat='latitude',
+        lon='longitude',
+        z='kwh_per_acc',
+        radius=10,
+        center=dict(lat=1.3521, lon=103.8198),  # Singapore's center
+        zoom=11,
+        mapbox_style="carto-positron",
+        title=f"Electricity Consumption Heatmap - {selected_dwelling}",
         opacity=0.7,
-        title=f"Average Electricity Usage by Region for {selected_dwelling_type}",
-        mapbox_style="carto-positron",  # Map style
-        center={"lat": 1.3521, "lon": 103.8198},  # Center the map on Singapore
-        zoom=10,  # Zoom level
-        hover_name="Region",  # Show region name on hover
-        hover_data={"kwh_per_acc": ":.2f"}  # Show electricity usage on hover
+        color_continuous_scale="Thermal",
+        range_color=[100, 200],
+        hover_data=['Area', 'kwh_per_acc']  # Show area name and value in hover
     )
 
-    # Update layout for better visuals
+    # Update layout
     fig.update_layout(
-    margin={"r": 0, "t": 50, "l": 0, "b": 0},
-    coloraxis_colorbar=dict(
-        title="kWh per Account",
-        tickformat=".2f",
-        thickness=15,
-        len=0.9,
-        bgcolor='rgba(255,255,255,0.8)',
+        mapbox=dict(
+            bounds=dict(
+                west=103.6,
+                east=104.0,
+                south=1.2,
+                north=1.5
+            )
         ),
-    mapbox=dict(
-        zoom=10,
-        center={"lat": 1.3521, "lon": 103.8198}
+        margin=dict(l=0, r=0, t=30, b=0),
+        height=700,
+        coloraxis_colorbar=dict(
+            title="kWh per Account",
+            titleside="right",
+            thickness=20,
+            len=0.9,
+            outlinewidth=1
         )
     )
 
-    # Prepare data for the table
-    table_data = region_summary.to_dict("records")
+    fig.update_traces(
+        colorbar=dict(
+            tickmode='linear',
+            tick0=filtered_df['kwh_per_acc'].min(),
+            dtick=(filtered_df['kwh_per_acc'].max() - filtered_df['kwh_per_acc'].min()) / 10
+        )
+    )
 
-    return fig, table_data
+    return fig
