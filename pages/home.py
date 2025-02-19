@@ -18,6 +18,8 @@ dash.register_page(__name__, path="/")
 
 # Load the data
 df = pd.read_csv("final.csv")
+to_delete = ['East Region', 'North Region', 'Central Region', 'West Region', 'North East Region']
+df = df[df['Area'].isin(to_delete) == False]
 
 # Layout with 3 dropdowns and 1 graph
 '''
@@ -26,9 +28,9 @@ dataset does not contain a MeterID, we use the combination of Region-Area-Dwelli
 as the unique identifier. 
 - Bar graph is chosen to represent the monthly variations in electricity consumption, 
 identifying certain seasonal patterns.
-- Benchmark against similar dwelling types in the region can become a comparison for the user
-to know if their energy consumption is above or below the standard.
-If the consumption is consistently above average, user can explore ways to serve their energy.
+- Benchmark against similar dwelling types in the region can become a comparison 
+to know if the energy consumption is above or below the standard.
+If the consumption is consistently above average, there are energy-saving plans that can be rolled out.
 '''
 layout = html.Div([
     dbc.Container([
@@ -96,6 +98,7 @@ def update_graph(selected_region, selected_area, selected_dwelling):
     regional_avg = regional_avg.tail(12)
 
     # Initialize the figure, add bars and lines
+    # go is used instead of px because it allows multiple traces
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
@@ -109,46 +112,20 @@ def update_graph(selected_region, selected_area, selected_dwelling):
         x=regional_avg["date"],
         y=regional_avg["kwh_per_acc"],
         name="Regional Average",
-        line=dict(color='rgb(144, 238, 144)', width=2) 
+        line={"color":"rgb(144, 238, 144)", "width":2}
     ))
 
     # Customize the xaxis and yaxis, as well as the plot style
     fig.update_layout(
         title="Electricity Consumption",
-        xaxis=dict(
-            title="Month",
-            tickformat='%b %y',
-            showgrid=True,
-            gridcolor="rgba(0,0,0,0.1)"
-        ),
-        yaxis=dict(
-            title="kWh",
-            showgrid=True,
-            gridcolor="rgba(0,0,0,0.1)",
-            range=[0, max(displayed_data["kwh_per_acc"].max(),
-                         regional_avg["kwh_per_acc"].max()*1.2)]
-        ),
+        xaxis={"title":"Month","tickformat":"%b %y"},
+        yaxis={"title":"kWh",
+               "range":[0, max(displayed_data["kwh_per_acc"].max(),regional_avg["kwh_per_acc"].max()*1.2)]},
+        hovermode="x unified", # Hover data on x axis
+        barmode="overlay", 
         plot_bgcolor="white",
-        hovermode="x unified",
-        barmode="overlay",
         showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        )
+        legend={"orientation":"h","yanchor":"bottom","y":1.02,"xanchor":"right","x":1}
     )
-
-    # Add annotation
-    for i in range(len(displayed_data)):
-        fig.add_annotation(
-            x=displayed_data["date"].iloc[i],
-            y=displayed_data["kwh_per_acc"].iloc[i],
-            text=str(round(displayed_data["kwh_per_acc"].iloc[i])),
-            showarrow=False,
-            yshift=10
-        )
 
     return fig

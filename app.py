@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Nov 30 14:31:04 2024
+Created on Thu Jan 16 17:06:54 2025
 
-@author: Controls and Callbacks
-https://dash.plotly.com/tutorial
+@author: limeylia
+
 """
 
 # Import packages

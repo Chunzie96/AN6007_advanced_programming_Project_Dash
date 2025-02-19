@@ -17,6 +17,8 @@ dash.register_page(__name__, path="/trend")
 
 # Load the data
 df = pd.read_csv("final.csv")
+to_delete = ['East Region', 'North Region', 'Central Region', 'West Region', 'North East Region']
+df = df[df['Area'].isin(to_delete) == False]
 
 # Layout for two option buttons and a graph
 '''
@@ -63,10 +65,13 @@ def update_trend_graph(selected_trend):
         template="simple_white",
         markers=True 
     )
+
+    # Updates graph layout
     fig.update_layout(
-        title=dict(font=dict(size=20), x=0.5),
-        xaxis=dict(title_font=dict(size=16), tickfont=dict(size=12)),
-        yaxis=dict(title_font=dict(size=16), tickfont=dict(size=12)),  
-        font=dict(color="black") 
+        title={"font":{"size":16},"x":0.5},
+        xaxis={"title":{"font":{"size":14}},"tickfont":{"size":12},"gridcolor":"rgba(0,0,0,0.1)"},
+        yaxis={"title":{"font":{"size":14}},"tickfont":{"size":12},"gridcolor":"rgba(0,0,0,0.1)"},
+        font={"color":"black"}
     )
+
     return fig
