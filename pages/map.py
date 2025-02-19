@@ -4,7 +4,6 @@ import pandas as pd
 import plotly.express as px
 import dash_bootstrap_components as dbc
 import json
-import re
 
 dash.register_page(__name__, path='/map')
 
