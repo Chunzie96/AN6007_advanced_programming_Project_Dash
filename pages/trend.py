@@ -69,8 +69,8 @@ def update_trend_graph(selected_trend):
     # Updates graph layout
     fig.update_layout(
         title={"font":{"size":16},"x":0.5},
-        xaxis={"title":{"font":{"size":14}},"tickfont":{"size":12},"gridcolor":"rgba(0,0,0,0.1)"},
-        yaxis={"title":{"font":{"size":14}},"tickfont":{"size":12},"gridcolor":"rgba(0,0,0,0.1)"},
+        xaxis={"title":{"font":{"size":14}},"tickfont":{"size":12}},
+        yaxis={"title":{"font":{"size":14}},"tickfont":{"size":12},"tickformat": ".2f"},
         font={"color":"black"}
     )
 
