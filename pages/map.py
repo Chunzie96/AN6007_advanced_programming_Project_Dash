@@ -1,26 +1,18 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 22 20:07:20 2025
-
-@author: chunhan
-"""
 import dash
 from dash import html, dcc, callback, Output, Input
 import pandas as pd
 import plotly.express as px
 import dash_bootstrap_components as dbc
-from dash.dash_table import DataTable
+import json
 
-dash.register_page(__name__, path="/map")  # Register the map page
+dash.register_page(__name__, path='/map')
 
 # Load the electricity data
 df = pd.read_csv("final.csv")
 
-# Initialize the Dash app
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+# Calculate average consumption by area for each dwelling type
+df_agg = df.groupby(['Area', 'dwelling_type'])['kwh_per_acc'].mean().reset_index()
 
-# Define Singapore area coordinates
 singapore_coordinates = {
     'Ang Mo Kio': {'lat': 1.3691, 'lon': 103.8454},
     'Bedok': {'lat': 1.3236, 'lon': 103.9273},
@@ -50,81 +42,76 @@ singapore_coordinates = {
     'Yishun': {'lat': 1.4304, 'lon': 103.8354}
 }
 
-# Process the dataframe to add coordinates
-def add_coordinates(df):
-    # Create new columns for latitude and longitude
-    df['latitude'] = df['Area'].map(lambda x: singapore_coordinates.get(x, {}).get('lat'))
-    df['longitude'] = df['Area'].map(lambda x: singapore_coordinates.get(x, {}).get('lon'))
-    return df
+# Simple GeoJSON for Singapore regions (you should replace this with actual detailed GeoJSON)
+singapore_geojson = {
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {"name": area},
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[
+                    [singapore_coordinates[area]['lon'] - 0.02, singapore_coordinates[area]['lat'] - 0.02],
+                    [singapore_coordinates[area]['lon'] + 0.02, singapore_coordinates[area]['lat'] - 0.02],
+                    [singapore_coordinates[area]['lon'] + 0.02, singapore_coordinates[area]['lat'] + 0.02],
+                    [singapore_coordinates[area]['lon'] - 0.02, singapore_coordinates[area]['lat'] + 0.02],
+                    [singapore_coordinates[area]['lon'] - 0.02, singapore_coordinates[area]['lat'] - 0.02]
+                ]]
+            }
+        } for area in singapore_coordinates
+    ]
+}
 
-# Assuming df is your original dataframe
-# df = pd.read_csv('your_data.csv')
-df = add_coordinates(df)
-
+# Update the layout (remains the same)
 layout = html.Div([
     dbc.Container([
-        html.H1("Singapore Electricity Consumption Heatmap",
-                className="text-center my-4"),
+        html.H1("Electricity Consumption Heatmap", className="text-center my-4"),
 
-        # Dropdown for dwelling type
         dbc.Row([
             dbc.Col([
                 html.Label("Select Dwelling Type"),
-                dcc.Dropdown(
-                    id='dwelling-dropdown',
-                    options=[{'label': i, 'value': i}
-                            for i in df['dwelling_type'].unique()],
-                    value=df['dwelling_type'].iloc[0],
-                    className="mb-4"
-                )
-            ], width=6)
-        ], justify="center"),
+                dcc.Dropdown(options=[each for each in df["dwelling_type"].unique()],
+                           value=df['dwelling_type'].iloc[1],
+                           id='dwelling-dropdown')
+            ], width=4)
+        ], className="mb-4", justify="center"),
 
-        # Heatmap
         dbc.Row([
             dbc.Col([
-                dcc.Graph(id='singapore-heatmap')
+                dcc.Graph(id="heatmap")
             ], width=12)
         ])
     ])
 ])
 
 @callback(
-    Output('singapore-heatmap', 'figure'),
+    Output('heatmap', 'figure'),
     [Input('dwelling-dropdown', 'value')]
 )
 def update_heatmap(selected_dwelling):
-    # Filter data based on dwelling type
-    filtered_df = df[df['dwelling_type'] == selected_dwelling]
+    # Filter data based on selection
+    filtered_df = df_agg[df_agg['dwelling_type'] == selected_dwelling]
 
-    # Create the heatmap
-    fig = px.density_mapbox(
+    # Create the choropleth map
+    fig = px.choropleth_mapbox(
         filtered_df,
-        lat='latitude',
-        lon='longitude',
-        z='kwh_per_acc',
-        radius=10,
-        center=dict(lat=1.3521, lon=103.8198),  # Singapore's center
-        zoom=11,
+        geojson=singapore_geojson,
+        locations='Area',
+        featureidkey='properties.name',
+        color='kwh_per_acc',
+        center={"lat": 1.3521, "lon": 103.8198},
+        zoom=10.5,
         mapbox_style="carto-positron",
-        title=f"Electricity Consumption Heatmap - {selected_dwelling}",
+        color_continuous_scale="Viridis",
         opacity=0.7,
-        color_continuous_scale="Thermal",
-        range_color=[100, 200],
-        hover_data=['Area', 'kwh_per_acc']  # Show area name and value in hover
+        labels={'kwh_per_acc': 'kWh per Account'},
+        title=f"Electricity Consumption by Area - {selected_dwelling}"
     )
 
-    # Update layout
+    # Customize layout
     fig.update_layout(
-        mapbox=dict(
-            bounds=dict(
-                west=103.6,
-                east=104.0,
-                south=1.2,
-                north=1.5
-            )
-        ),
-        margin=dict(l=0, r=0, t=30, b=0),
+        margin={"r":0,"t":30,"l":0,"b":0},
         height=700,
         coloraxis_colorbar=dict(
             title="kWh per Account",
@@ -132,14 +119,6 @@ def update_heatmap(selected_dwelling):
             thickness=20,
             len=0.9,
             outlinewidth=1
-        )
-    )
-
-    fig.update_traces(
-        colorbar=dict(
-            tickmode='linear',
-            tick0=filtered_df['kwh_per_acc'].min(),
-            dtick=(filtered_df['kwh_per_acc'].max() - filtered_df['kwh_per_acc'].min()) / 10
         )
     )
 

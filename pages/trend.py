@@ -18,7 +18,12 @@ dash.register_page(__name__, path="/trend")
 # Load the data
 df = pd.read_csv("final.csv")
 
-# Layout
+# Layout for two option buttons and a graph
+'''
+The graph shows overall electricity consumption trend in Singapore over the 
+years. Since it is a time-series, line graph is used. Aside from yearly trend,
+a monthly trend graph is also included for identification of seasonal variations.
+'''
 layout = html.Div([
     dbc.Container([
         html.H1("Electricity Trend Analysis", className="text-center my-4"),
@@ -42,9 +47,13 @@ layout = html.Div([
     Output("trend-graph", "figure"),
     Input("trend-radio-item", "value")
 )
+
+# Update the graph
 def update_trend_graph(selected_trend):
+    # Filter the data by year/month
     df_filtered = df.groupby(selected_trend)["kwh_per_acc"].mean().reset_index()
 
+    # Create the graph 
     fig = px.line(
         df_filtered,
         x=selected_trend,

@@ -12,10 +12,10 @@ import dash
 from dash import Dash, html
 import dash_bootstrap_components as dbc
 
-# Initialize the app with a Bootstrap theme
-app = Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.CYBORG])
+# Initialize app with use_pages and a Bootstrap theme
+app = Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.FLATLY])
 
-# Navbar
+# Navigation bar setup
 navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(dbc.NavLink("Home", href="/")),

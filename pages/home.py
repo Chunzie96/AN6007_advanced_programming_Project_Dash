@@ -19,7 +19,17 @@ dash.register_page(__name__, path="/")
 # Load the data
 df = pd.read_csv("final.csv")
 
-# Layout
+# Layout with 3 dropdowns and 1 graph
+'''
+The graph shows monthly electricity consumption for the past 12 months. However, since 
+dataset does not contain a MeterID, we use the combination of Region-Area-Dwelling_type 
+as the unique identifier. 
+- Bar graph is chosen to represent the monthly variations in electricity consumption, 
+identifying certain seasonal patterns.
+- Benchmark against similar dwelling types in the region can become a comparison for the user
+to know if their energy consumption is above or below the standard.
+If the consumption is consistently above average, user can explore ways to serve their energy.
+'''
 layout = html.Div([
     dbc.Container([
         html.H1("Electricity Consumption", className="text-center my-4"),
@@ -47,7 +57,7 @@ layout = html.Div([
     ])
 ])
 
-# Add callback for area options
+# Add callback for area options to ensure only areas within selected region are shown
 @callback(
     Output('area-dropdown', 'options'),
     Output('area-dropdown', 'value'),
@@ -65,9 +75,12 @@ def update_area_dropdown(selected_region):
      Input('dwelling-dropdown', 'value')]
 )
 
-# Update graph function
+# Update the graph function
 def update_graph(selected_region, selected_area, selected_dwelling):
+    # Create a date column in df for easy sorting
     df["date"] = pd.to_datetime(df[["year", "month"]].assign(day=1))
+
+    # Filter the df based on selections, choose only the data from past 12 months 
     df_filtered = df[
         (df["Region"] == selected_region) &
         (df["Area"] == selected_area) &
@@ -75,13 +88,14 @@ def update_graph(selected_region, selected_area, selected_dwelling):
     ]
     displayed_data = df_filtered.sort_values("date").tail(12)
 
+    # Filter df for the regional average line, similarly, only take data from past 12 months
     regional_avg = df[
         (df["Region"] == selected_region) &
         (df["dwelling_type"] == selected_dwelling)
     ].groupby("date")["kwh_per_acc"].mean().reset_index()
-
     regional_avg = regional_avg.tail(12)
 
+    # Initialize the figure, add bars and lines
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
@@ -98,6 +112,7 @@ def update_graph(selected_region, selected_area, selected_dwelling):
         line=dict(color='rgb(144, 238, 144)', width=2) 
     ))
 
+    # Customize the xaxis and yaxis, as well as the plot style
     fig.update_layout(
         title="Electricity Consumption",
         xaxis=dict(
@@ -126,6 +141,7 @@ def update_graph(selected_region, selected_area, selected_dwelling):
         )
     )
 
+    # Add annotation
     for i in range(len(displayed_data)):
         fig.add_annotation(
             x=displayed_data["date"].iloc[i],
