@@ -119,7 +119,7 @@ def update_graph(selected_region, selected_area, selected_dwelling):
     fig.update_layout(
         title="Electricity Consumption",
         xaxis={"title":"Month","tickformat":"%b %y"},
-        yaxis={"title":"kWh",
+        yaxis={"title":"kWh","tickformat": ".2f",
                "range":[0, max(displayed_data["kwh_per_acc"].max(),regional_avg["kwh_per_acc"].max()*1.2)]},
         hovermode="x unified", # Hover data on x axis
         barmode="overlay", 
