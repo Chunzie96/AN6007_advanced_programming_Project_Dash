@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jan 22 21:13:32 2025
+
+@author: chunhan
+"""
+# Import all necessary libraries
 import dash
 from dash import html, dcc, callback, Output, Input
 import pandas as pd
