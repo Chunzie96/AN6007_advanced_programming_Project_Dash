@@ -13,8 +13,12 @@
 ## Installation Guide for Backend
 Step 1: Run this in the terminal
 ```
+python3 -m pip install --upgrade pip
+```
+Step 2: Run this in the terminal
+```
 pip install -r requirements.txt
 ```
-- Step 2: Run this in terminal
+Step 3: Run this in terminal
 ```
 python app.py
